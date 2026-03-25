@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Welcome -->
+<div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Hey, {{ user.name.split()[0] }} 👋</h2>
+    <p class="text-gray-500 mt-1">Here's your spending summary</p>
+</div>
+
+<!-- Budget Alert -->
+{% if budget > 0 %}
+    {% set percent = (monthly_total / budget * 100) | round | int %}
+    <div class="bg-white rounded-2xl shadow-sm p-5 mb-6">
+        <div class="flex justify-between items-center mb-2">
+            <span class="font-semibold text-gray-700">Monthly Budget</span>
+            <span class="text-sm text-gray-500">₹{{ monthly_total | round(2) }} / ₹{{ budget | round(2) }}</span>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-3">
+            <div class="h-3 rounded-full transition-all
+                {% if percent >= 100 %}bg-red-500
+                {% elif percent >= 80 %}bg-yellow-400
+                {% else %}bg-indigo-500{% endif %}"
+                style="width: {{ [percent, 100] | min }}%">
+            </div>
+        </div>
+        {% if percent >= 100 %}
+            <p class="text-red-500 text-sm mt-2 font-medium">⚠️ You've exceeded your monthly budget!</p>
+        {% elif percent >= 80 %}
+            <p class="text-yellow-500 text-sm mt-2 font-medium">⚠️ You've used {{ percent }}% of your budget!</p>
+        {% endif %}
+    </div>
+{% endif %}
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-2 gap-4 mb-6">
+    <div class="bg-white rounded-2xl shadow-sm p-5">
+        <p class="text-gray-500 text-sm mb-1">Total Spent</p>
+        <p class="text-2xl font-bold text-indigo-600">₹{{ total | round(2) }}</p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm p-5">
+        <p class="text-gray-500 text-sm mb-1">This Month</p>
+        <p class="text-2xl font-bold text-indigo-600">₹{{ monthly_total | round(2) }}</p>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="flex gap-3 mb-6">
+    <a href="{{ url_for('add') }}"
+       class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-all">
+        + Add Expense
+    </a>
+    <a href="{{ url_for('stats') }}"
+       class="bg-gray-100 text-gray-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-gray-200 transition-all">
+        View Stats
+    </a>
+</div>
+
+<!-- Set Budget -->
+<div class="bg-white rounded-2xl shadow-sm p-5 mb-6">
+    <h3 class="font-semibold text-gray-700 mb-3">Set Monthly Budget</h3>
+    <form method="POST" action="{{ url_for('set_budget') }}" class="flex gap-3">
+        <input type="number" name="budget" step="0.01" min="0"
+               placeholder="Enter amount in ₹"
+               value="{{ budget if budget > 0 else '' }}"
+               class="flex-1 border-2 border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-indigo-500">
+        <button type="submit"
+                class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-indigo-700 transition-all">
+            Save
+        </button>
+    </form>
+</div>
+
+<!-- Expenses List -->
+<div>
+    <h3 class="font-semibold text-gray-700 mb-3">Recent Expenses</h3>
+    {% if expenses %}
+        {% for expense in expenses %}
+        <div class="bg-white rounded-2xl shadow-sm p-4 mb-3 flex justify-between items-center">
+            <div>
+                <span class="text-indigo-600 font-semibold text-sm">{{ expense.category }}</span>
+                <p class="text-gray-700 mt-0.5">{{ expense.note if expense.note else '—' }}</p>
+                <p class="text-gray-400 text-xs mt-0.5">{{ expense.date }}</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="font-bold text-gray-800">₹{{ expense.amount | round(2) }}</span>
+                <form method="POST" action="{{ url_for('delete', expense_id=expense._id) }}">
+                    <button type="submit"
+                            class="text-gray-300 hover:text-red-400 transition-all text-lg">🗑</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="bg-white rounded-2xl shadow-sm p-8 text-center text-gray-400">
+            No expenses yet. Add your first one!
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}
