@@ -1,100 +1,274 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- Welcome -->
-<div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-800">Hey, {{ user.name.split()[0] }} 👋</h2>
-    <p class="text-gray-500 mt-1">Here's your spending summary</p>
-</div>
+<style>
+* { box-sizing: border-box; }
+.page-header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; margin-bottom: 1.75rem; gap: 12px;
+}
+.page-header h2 { font-size: 22px; font-weight: 800; color: #0f0f12; letter-spacing: -0.5px; margin-bottom: 2px; }
+.page-header p { font-size: 13px; color: #999; }
+.header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.btn-primary {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; background: #0f0f12; color: #fff;
+    border-radius: 10px; font-size: 13px; font-weight: 600;
+    text-decoration: none; transition: background 0.12s; white-space: nowrap;
+}
+.btn-primary:hover { background: #1e1e24; }
+.btn-secondary {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; background: #fff; color: #444;
+    border-radius: 10px; font-size: 13px; font-weight: 600;
+    text-decoration: none; border: 1px solid #e5e5ea;
+    transition: border-color 0.12s, background 0.12s;
+}
+.btn-secondary:hover { background: #f9f9fb; border-color: #ccc; }
+.stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+@media (min-width: 600px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+.stat-card { background: #fff; border-radius: 14px; padding: 1rem 1.1rem; border: 1px solid #ebebef; }
+.stat-label { font-size: 10px; font-weight: 600; color: #bbb; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+.stat-value { font-size: 22px; font-weight: 800; color: #0f0f12; letter-spacing: -0.5px; line-height: 1; }
+.stat-sub { font-size: 11px; color: #bbb; margin-top: 4px; }
+.stat-value.clr-green { color: #16a34a; }
+.stat-value.clr-yellow { color: #d97706; }
+.stat-value.clr-red { color: #dc2626; }
+.stat-value.clr-accent { color: #4f46e5; }
+.budget-section { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+@media (max-width: 560px) { .budget-section { grid-template-columns: 1fr; } }
+.budget-card { background: #fff; border-radius: 14px; padding: 1.1rem 1.25rem; border: 1px solid #ebebef; }
+.budget-card-title {
+    font-size: 11px; font-weight: 600; color: #bbb; text-transform: uppercase;
+    letter-spacing: 0.6px; margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.budget-amounts { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.budget-spent { font-size: 18px; font-weight: 800; letter-spacing: -0.4px; }
+.budget-spent.clr-green { color: #16a34a; }
+.budget-spent.clr-yellow { color: #d97706; }
+.budget-spent.clr-red { color: #dc2626; }
+.budget-of-total { font-size: 12px; color: #bbb; }
+.budget-bar-bg { width: 100%; height: 5px; background: #f0f0f2; border-radius: 99px; overflow: hidden; margin-bottom: 6px; }
+.budget-bar-fill { height: 5px; border-radius: 99px; transition: width 0.5s ease; }
+.budget-bar-fill.clr-green { background: #22c55e; }
+.budget-bar-fill.clr-yellow { background: #f59e0b; }
+.budget-bar-fill.clr-red { background: #ef4444; }
+.budget-status { font-size: 11px; font-weight: 500; }
+.budget-status.clr-green { color: #16a34a; }
+.budget-status.clr-yellow { color: #d97706; }
+.budget-status.clr-red { color: #dc2626; }
+.budget-not-set { font-size: 12px; color: #ccc; font-style: italic; margin-top: 8px; }
+.set-budgets-card { background: #fff; border-radius: 14px; padding: 1.1rem 1.25rem; border: 1px solid #ebebef; margin-bottom: 14px; }
+.set-budgets-title { font-size: 11px; font-weight: 600; color: #bbb; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; }
+.budget-inputs-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.budget-input-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
+.budget-input-label { font-size: 11px; font-weight: 500; color: #999; }
+.budget-input-row { display: flex; gap: 8px; }
+.budget-input {
+    flex: 1; border: 1.5px solid #e5e5ea; border-radius: 10px;
+    padding: 8px 12px; font-size: 13px; font-family: 'Outfit', sans-serif;
+    color: #0f0f12; background: #fafafa; outline: none; transition: border-color 0.15s;
+}
+.budget-input:focus { border-color: #4f46e5; background: #fff; }
+.btn-save {
+    padding: 8px 16px; background: #0f0f12; color: #fff; border: none;
+    border-radius: 10px; font-size: 13px; font-weight: 600;
+    font-family: 'Outfit', sans-serif; cursor: pointer; transition: background 0.12s; white-space: nowrap;
+}
+.btn-save:hover { background: #1e1e24; }
+.expense-list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.expense-list-title { font-size: 13px; font-weight: 600; color: #333; }
+.expense-count { font-size: 11px; color: #ccc; }
+.expense-item {
+    background: #fff; border-radius: 12px; padding: 13px 16px; margin-bottom: 7px;
+    border: 1px solid #ebebef; display: flex; align-items: center;
+    justify-content: space-between; transition: border-color 0.12s;
+}
+.expense-item:hover { border-color: #d0d0e0; }
+.expense-left { display: flex; align-items: center; gap: 12px; }
+.expense-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.dot-clr-green { background: #22c55e; }
+.dot-clr-yellow { background: #f59e0b; }
+.dot-clr-red { background: #ef4444; }
+.expense-cat { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+.expense-note { font-weight: 400; color: #999; }
+.expense-meta { font-size: 11px; color: #ccc; margin-top: 1px; }
+.expense-right { display: flex; align-items: center; gap: 14px; }
+.expense-amount { font-size: 14px; font-weight: 700; color: #0f0f12; letter-spacing: -0.3px; }
+.delete-btn {
+    background: none; border: none; cursor: pointer; padding: 5px;
+    border-radius: 6px; display: flex; align-items: center;
+    justify-content: center; transition: background 0.12s; color: #ddd;
+}
+.delete-btn:hover { background: #fff0f0; color: #ef4444; }
+.delete-btn svg { width: 14px; height: 14px; }
+.empty-state { background: #fff; border-radius: 14px; padding: 3rem 2rem; text-align: center; border: 1px solid #ebebef; }
+.empty-title { font-size: 14px; font-weight: 600; color: #bbb; margin-bottom: 4px; }
+.empty-sub { font-size: 13px; color: #ddd; }
+</style>
 
-<!-- Budget Alert -->
-{% if budget > 0 %}
-    {% set percent = (monthly_total / budget * 100) | round | int %}
-    <div class="bg-white rounded-2xl shadow-sm p-5 mb-6">
-        <div class="flex justify-between items-center mb-2">
-            <span class="font-semibold text-gray-700">Monthly Budget</span>
-            <span class="text-sm text-gray-500">₹{{ monthly_total | round(2) }} / ₹{{ budget | round(2) }}</span>
-        </div>
-        <div class="w-full bg-gray-100 rounded-full h-3">
-            <div class="h-3 rounded-full transition-all
-                {% if percent >= 100 %}bg-red-500
-                {% elif percent >= 80 %}bg-yellow-400
-                {% else %}bg-indigo-500{% endif %}"
-                style="width: {{ [percent, 100] | min }}%">
-            </div>
-        </div>
-        {% if percent >= 100 %}
-            <p class="text-red-500 text-sm mt-2 font-medium">⚠️ You've exceeded your monthly budget!</p>
-        {% elif percent >= 80 %}
-            <p class="text-yellow-500 text-sm mt-2 font-medium">⚠️ You've used {{ percent }}% of your budget!</p>
-        {% endif %}
-    </div>
+{% set m_budget = monthly_budget | float %}
+{% set y_budget = yearly_budget | float %}
+{% if m_budget > 0 %}
+    {% set m_pct = [(monthly_total / m_budget * 100) | round | int, 100] | min %}
+{% else %}
+    {% set m_pct = 0 %}
+{% endif %}
+{% if y_budget > 0 %}
+    {% set y_pct = [(yearly_total / y_budget * 100) | round | int, 100] | min %}
+{% else %}
+    {% set y_pct = 0 %}
 {% endif %}
 
-<!-- Stats Cards -->
-<div class="grid grid-cols-2 gap-4 mb-6">
-    <div class="bg-white rounded-2xl shadow-sm p-5">
-        <p class="text-gray-500 text-sm mb-1">Total Spent</p>
-        <p class="text-2xl font-bold text-indigo-600">₹{{ total | round(2) }}</p>
+{% macro bar_color(pct) %}{% if pct >= 100 %}clr-red{% elif pct >= 80 %}clr-yellow{% else %}clr-green{% endif %}{% endmacro %}
+{% macro dot_color() %}{%- if m_budget > 0 and monthly_total / m_budget >= 1.0 %}clr-red{%- elif m_budget > 0 and monthly_total / m_budget >= 0.8 %}clr-yellow{%- elif y_budget > 0 and yearly_total / y_budget >= 1.0 %}clr-red{%- elif y_budget > 0 and yearly_total / y_budget >= 0.8 %}clr-yellow{%- else %}clr-green{%- endif %}{% endmacro %}
+
+<div class="page-header">
+    <div>
+        <h2>Hey, {{ user.name.split()[0] }}</h2>
+        <p>{{ now_month }} &nbsp;·&nbsp; {{ days_left }} days left this month</p>
     </div>
-    <div class="bg-white rounded-2xl shadow-sm p-5">
-        <p class="text-gray-500 text-sm mb-1">This Month</p>
-        <p class="text-2xl font-bold text-indigo-600">₹{{ monthly_total | round(2) }}</p>
+    <div class="header-actions">
+        <a href="{{ url_for('add') }}" class="btn-primary">+ Add</a>
+        <a href="{{ url_for('stats') }}" class="btn-secondary">Stats</a>
     </div>
 </div>
 
-<!-- Actions -->
-<div class="flex gap-3 mb-6">
-    <a href="{{ url_for('add') }}"
-       class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-all">
-        + Add Expense
-    </a>
-    <a href="{{ url_for('stats') }}"
-       class="bg-gray-100 text-gray-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-gray-200 transition-all">
-        View Stats
-    </a>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">This month</div>
+        <div class="stat-value {{ bar_color(m_pct) }}" data-amount="{{ monthly_total | round(2) }}">{{ monthly_total | round(2) }}</div>
+        <div class="stat-sub">of {{ monthly_expense_count }} expenses</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">This year</div>
+        <div class="stat-value clr-accent" data-amount="{{ yearly_total | round(2) }}">{{ yearly_total | round(2) }}</div>
+        <div class="stat-sub">total spent</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Daily average</div>
+        <div class="stat-value" data-amount="{{ daily_avg | round(2) }}">{{ daily_avg | round(2) }}</div>
+        <div class="stat-sub">this month</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Top category</div>
+        <div class="stat-value" style="font-size:16px;">{{ top_category or '—' }}</div>
+        <div class="stat-sub">most spent</div>
+    </div>
 </div>
 
-<!-- Set Budget -->
-<div class="bg-white rounded-2xl shadow-sm p-5 mb-6">
-    <h3 class="font-semibold text-gray-700 mb-3">Set Monthly Budget</h3>
-    <form method="POST" action="{{ url_for('set_budget') }}" class="flex gap-3">
-        <input type="number" name="budget" step="0.01" min="0"
-               placeholder="Enter amount in ₹"
-               value="{{ budget if budget > 0 else '' }}"
-               class="flex-1 border-2 border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-indigo-500">
-        <button type="submit"
-                class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-indigo-700 transition-all">
-            Save
-        </button>
+<div class="budget-section">
+    <div class="budget-card">
+        <div class="budget-card-title">
+            <span>Monthly budget</span>
+            {% if m_budget > 0 %}<span style="font-size:10px;color:#ccc;">{{ m_pct }}%</span>{% endif %}
+        </div>
+        {% if m_budget > 0 %}
+        <div class="budget-amounts">
+            <span class="budget-spent {{ bar_color(m_pct) }}" data-amount="{{ monthly_total | round(2) }}">{{ monthly_total | round(2) }}</span>
+            <span class="budget-of-total">of <span data-amount="{{ m_budget | round(2) }}">{{ m_budget | round(2) }}</span></span>
+        </div>
+        <div class="budget-bar-bg">
+            <div class="budget-bar-fill {{ bar_color(m_pct) }}" style="width:{{ m_pct }}%"></div>
+        </div>
+        <div class="budget-status {{ bar_color(m_pct) }}">
+            {% if m_pct >= 100 %}Exceeded by <span data-amount="{{ (monthly_total - m_budget) | round(2) }}">{{ (monthly_total - m_budget) | round(2) }}</span>
+            {% elif m_pct >= 80 %}<span data-amount="{{ (m_budget - monthly_total) | round(2) }}">{{ (m_budget - monthly_total) | round(2) }}</span> remaining — slow down
+            {% else %}<span data-amount="{{ (m_budget - monthly_total) | round(2) }}">{{ (m_budget - monthly_total) | round(2) }}</span> remaining
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="budget-not-set">Not set</div>
+        {% endif %}
+    </div>
+
+    <div class="budget-card">
+        <div class="budget-card-title">
+            <span>Yearly budget</span>
+            {% if y_budget > 0 %}<span style="font-size:10px;color:#ccc;">{{ y_pct }}%</span>{% endif %}
+        </div>
+        {% if y_budget > 0 %}
+        <div class="budget-amounts">
+            <span class="budget-spent {{ bar_color(y_pct) }}" data-amount="{{ yearly_total | round(2) }}">{{ yearly_total | round(2) }}</span>
+            <span class="budget-of-total">of <span data-amount="{{ y_budget | round(2) }}">{{ y_budget | round(2) }}</span></span>
+        </div>
+        <div class="budget-bar-bg">
+            <div class="budget-bar-fill {{ bar_color(y_pct) }}" style="width:{{ y_pct }}%"></div>
+        </div>
+        <div class="budget-status {{ bar_color(y_pct) }}">
+            {% if y_pct >= 100 %}Exceeded by <span data-amount="{{ (yearly_total - y_budget) | round(2) }}">{{ (yearly_total - y_budget) | round(2) }}</span>
+            {% elif y_pct >= 80 %}<span data-amount="{{ (y_budget - yearly_total) | round(2) }}">{{ (y_budget - yearly_total) | round(2) }}</span> remaining — slow down
+            {% else %}<span data-amount="{{ (y_budget - yearly_total) | round(2) }}">{{ (y_budget - yearly_total) | round(2) }}</span> remaining
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="budget-not-set">Not set</div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="set-budgets-card">
+    <div class="set-budgets-title">Set budgets</div>
+    <form method="POST" action="{{ url_for('set_budget') }}">
+        <div class="budget-inputs-row">
+            <div class="budget-input-group">
+                <span class="budget-input-label">Monthly</span>
+                <div class="budget-input-row">
+                    <input type="number" name="monthly_budget" step="0.01" min="0"
+                           placeholder="e.g. 500" value="{{ m_budget if m_budget > 0 else '' }}" class="budget-input">
+                </div>
+            </div>
+            <div class="budget-input-group">
+                <span class="budget-input-label">Yearly</span>
+                <div class="budget-input-row">
+                    <input type="number" name="yearly_budget" step="0.01" min="0"
+                           placeholder="e.g. 6000" value="{{ y_budget if y_budget > 0 else '' }}" class="budget-input">
+                </div>
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+                <button type="submit" class="btn-save">Save</button>
+            </div>
+        </div>
     </form>
 </div>
 
-<!-- Expenses List -->
-<div>
-    <h3 class="font-semibold text-gray-700 mb-3">Recent Expenses</h3>
-    {% if expenses %}
-        {% for expense in expenses %}
-        <div class="bg-white rounded-2xl shadow-sm p-4 mb-3 flex justify-between items-center">
-            <div>
-                <span class="text-indigo-600 font-semibold text-sm">{{ expense.category }}</span>
-                <p class="text-gray-700 mt-0.5">{{ expense.note if expense.note else '—' }}</p>
-                <p class="text-gray-400 text-xs mt-0.5">{{ expense.date }}</p>
-            </div>
-            <div class="flex items-center gap-3">
-                <span class="font-bold text-gray-800">₹{{ expense.amount | round(2) }}</span>
-                <form method="POST" action="{{ url_for('delete', expense_id=expense._id) }}">
-                    <button type="submit"
-                            class="text-gray-300 hover:text-red-400 transition-all text-lg">🗑</button>
-                </form>
-            </div>
-        </div>
-        {% endfor %}
-    {% else %}
-        <div class="bg-white rounded-2xl shadow-sm p-8 text-center text-gray-400">
-            No expenses yet. Add your first one!
-        </div>
-    {% endif %}
+<div class="expense-list-header">
+    <span class="expense-list-title">Recent expenses</span>
+    {% if expenses %}<span class="expense-count">{{ expenses | length }} total</span>{% endif %}
 </div>
+
+{% if expenses %}
+    {% for expense in expenses %}
+    {% set e_dot = dot_color() | trim %}
+    <div class="expense-item">
+        <div class="expense-left">
+            <div class="expense-dot dot-{{ e_dot }}"></div>
+            <div>
+                <div class="expense-cat">
+                    {{ expense.category }}
+                    {% if expense.note %}<span class="expense-note">&mdash; {{ expense.note }}</span>{% endif %}
+                </div>
+                <div class="expense-meta">{{ expense.date }}</div>
+            </div>
+        </div>
+        <div class="expense-right">
+            <span class="expense-amount" data-amount="{{ expense.amount | round(2) }}">{{ expense.amount | round(2) }}</span>
+            <form method="POST" action="{{ url_for('delete', expense_id=expense._id) }}" style="margin:0">
+                <button type="submit" class="delete-btn" title="Delete">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 4h12M5 4V2.5A.5.5 0 0 1 5.5 2h5a.5.5 0 0 1 .5.5V4M6 7v5M10 7v5M3 4l1 9.5A.5.5 0 0 0 4.5 14h7a.5.5 0 0 0 .5-.5L13 4"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <div class="empty-title">No expenses yet</div>
+        <div class="empty-sub">Add your first one to get started</div>
+    </div>
+{% endif %}
 
 {% endblock %}

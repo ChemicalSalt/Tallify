@@ -32,9 +32,20 @@ def delete_expense(expense_id):
     db = get_db()
     db["expenses"].delete_one({"_id": ObjectId(expense_id)})
 
-def update_budget(user_id, budget):
+def update_budget(user_id, monthly_budget, yearly_budget):
     db = get_db()
     db["users"].update_one(
         {"google_id": user_id},
-        {"$set": {"monthly_budget": float(budget)}}
+        {"$set": {
+            "monthly_budget": float(monthly_budget or 0),
+            "yearly_budget": float(yearly_budget or 0)
+        }}
+    )
+
+def update_category_budgets(google_id, category_budgets):
+    db = get_db()
+    db["users"].update_one(
+        {"google_id": google_id},
+        {"$set": {"category_budgets": category_budgets}},
+        upsert=True
     )

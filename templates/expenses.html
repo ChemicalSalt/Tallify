@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+* { box-sizing: border-box; }
+.expenses-header {
+    display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 1.5rem;
+}
+.expenses-header h2 {
+    font-size: 22px; font-weight: 800; color: #0f0f12;
+    letter-spacing: -0.5px; margin-bottom: 2px;
+}
+.expenses-header p { font-size: 13px; color: #aaa; }
+.btn-add {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; background: #0f0f12; color: #fff;
+    border-radius: 10px; font-size: 13px; font-weight: 600;
+    text-decoration: none; transition: background 0.12s; white-space: nowrap;
+}
+.btn-add:hover { background: #2a2a35; }
+
+.summary-strip {
+    display: flex; gap: 10px; margin-bottom: 1.25rem;
+}
+.summary-chip {
+    flex: 1; background: #fff;
+    border: 1px solid #ebebef; border-radius: 12px; padding: 12px 14px;
+}
+.chip-label {
+    font-size: 10px; font-weight: 700; color: #bbb;
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px;
+}
+.chip-value {
+    font-size: 18px; font-weight: 800; color: #0f0f12; letter-spacing: -0.4px;
+}
+.chip-value.accent { color: #4f46e5; }
+
+.section-label {
+    font-size: 10px; font-weight: 700; color: #ccc;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    margin-bottom: 8px; padding: 0 2px;
+}
+.expense-item {
+    background: #fff; border-radius: 12px;
+    padding: 13px 16px; margin-bottom: 7px;
+    border: 1px solid #ebebef;
+    display: flex; align-items: center;
+    justify-content: space-between;
+    transition: border-color 0.12s;
+}
+.expense-item:hover { border-color: #d0d0e0; }
+.expense-left { display: flex; align-items: center; gap: 12px; }
+.expense-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.dot-green { background: #22c55e; }
+.dot-yellow { background: #f59e0b; }
+.dot-red { background: #ef4444; }
+.expense-cat { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+.expense-note { font-weight: 400; color: #aaa; }
+.expense-date { font-size: 11px; color: #ccc; margin-top: 1px; }
+.expense-right { display: flex; align-items: center; gap: 12px; }
+.expense-amount {
+    font-size: 14px; font-weight: 700; color: #0f0f12; letter-spacing: -0.3px;
+}
+.delete-btn {
+    background: none; border: none; cursor: pointer; padding: 5px;
+    border-radius: 6px; display: flex; align-items: center;
+    color: #ddd; transition: background 0.12s, color 0.12s;
+}
+.delete-btn:hover { background: #fff0f0; color: #ef4444; }
+.delete-btn svg { width: 14px; height: 14px; }
+.empty-state {
+    background: #fff; border-radius: 14px;
+    padding: 3.5rem 2rem; text-align: center; border: 1px solid #ebebef;
+}
+.empty-title { font-size: 14px; font-weight: 600; color: #ccc; margin-bottom: 8px; }
+.empty-link {
+    font-size: 13px; color: #4f46e5; font-weight: 600; text-decoration: none;
+}
+.empty-link:hover { text-decoration: underline; }
+</style>
+
+{% macro dot_color() %}
+    {%- set m_budget = monthly_budget | float %}
+    {%- set y_budget = yearly_budget | float %}
+    {%- if m_budget > 0 and monthly_total / m_budget >= 1.0 %}red
+    {%- elif m_budget > 0 and monthly_total / m_budget >= 0.8 %}yellow
+    {%- elif y_budget > 0 and yearly_total / y_budget >= 1.0 %}red
+    {%- elif y_budget > 0 and yearly_total / y_budget >= 0.8 %}yellow
+    {%- else %}green{%- endif %}
+{% endmacro %}
+
+<div class="expenses-header">
+    <div>
+        <h2>Expenses</h2>
+        <p>{{ now_month }}</p>
+    </div>
+    <a href="{{ url_for('add') }}" class="btn-add">+ Add</a>
+</div>
+
+<div class="summary-strip">
+    <div class="summary-chip">
+        <div class="chip-label">This month</div>
+        <div class="chip-value" data-amount="{{ monthly_total | round(2) }}">{{ monthly_total | round(2) }}</div>
+    </div>
+    <div class="summary-chip">
+        <div class="chip-label">This year</div>
+        <div class="chip-value accent" data-amount="{{ yearly_total | round(2) }}">{{ yearly_total | round(2) }}</div>
+    </div>
+</div>
+
+{% if expenses %}
+    <div class="section-label">{{ expenses | length }} total</div>
+    {% for expense in expenses %}
+    {% set e_dot = dot_color() | trim %}
+    <div class="expense-item">
+        <div class="expense-left">
+            <div class="expense-dot dot-{{ e_dot }}"></div>
+            <div>
+                <div class="expense-cat">
+                    {{ expense.category }}
+                    {% if expense.note %}<span class="expense-note"> — {{ expense.note }}</span>{% endif %}
+                </div>
+                <div class="expense-date">{{ expense.date }}</div>
+            </div>
+        </div>
+        <div class="expense-right">
+            <span class="expense-amount" data-amount="{{ expense.amount | round(2) }}">{{ expense.amount | round(2) }}</span>
+            <form method="POST" action="{{ url_for('delete', expense_id=expense._id) }}" style="margin:0">
+                <button type="submit" class="delete-btn" title="Delete">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 4h12M5 4V2.5A.5.5 0 0 1 5.5 2h5a.5.5 0 0 1 .5.5V4M6 7v5M10 7v5M3 4l1 9.5A.5.5 0 0 0 4.5 14h7a.5.5 0 0 0 .5-.5L13 4"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <div class="empty-title">No expenses yet</div>
+        <a href="{{ url_for('add') }}" class="empty-link">Add your first one →</a>
+    </div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+* { box-sizing: border-box; }
+.page-header { margin-bottom: 1.75rem; }
+.page-header h2 { font-size: 22px; font-weight: 800; color: #0f0f12; letter-spacing: -0.5px; margin-bottom: 2px; }
+.page-header p { font-size: 13px; color: #aaa; }
+.section-label {
+    font-size: 10px; font-weight: 700; color: #bbb;
+    text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 10px; margin-top: 1.5rem;
+}
+.section-label.first { margin-top: 0; }
+.input-card { background: #fff; border: 1px solid #ebebef; border-radius: 14px; padding: 18px 20px; margin-bottom: 10px; }
+.input-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.input-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 130px; }
+.input-label { font-size: 11px; font-weight: 600; color: #888; }
+.field-input {
+    border: 1.5px solid #e5e5ea; border-radius: 10px; padding: 9px 13px; font-size: 14px;
+    font-family: 'Outfit', sans-serif; color: #0f0f12; background: #fafafa;
+    outline: none; transition: border-color 0.15s; width: 100%;
+}
+.field-input:focus { border-color: #4f46e5; background: #fff; }
+.btn-save {
+    padding: 9px 20px; background: #0f0f12; color: #fff; border: none;
+    border-radius: 10px; font-size: 13px; font-weight: 600;
+    font-family: 'Outfit', sans-serif; cursor: pointer; transition: background 0.12s; white-space: nowrap;
+}
+.btn-save:hover { background: #2a2a35; }
+.result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+@media (max-width: 480px) { .result-grid { grid-template-columns: 1fr; } }
+.result-card { background: #fff; border: 1px solid #ebebef; border-radius: 14px; padding: 16px 18px; }
+.result-card-head {
+    font-size: 10px; font-weight: 700; color: #bbb; text-transform: uppercase;
+    letter-spacing: 0.7px; margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.result-pct { font-size: 11px; color: #ccc; font-weight: 500; text-transform: none; letter-spacing: 0; }
+.result-amounts { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.result-spent { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+.result-spent.clr-green { color: #16a34a; }
+.result-spent.clr-yellow { color: #d97706; }
+.result-spent.clr-red { color: #dc2626; }
+.result-of { font-size: 12px; color: #bbb; }
+.bar-bg { width: 100%; height: 5px; background: #f0f0f2; border-radius: 99px; overflow: hidden; margin-bottom: 8px; }
+.bar-fill { height: 5px; border-radius: 99px; transition: width 0.6s ease; }
+.bar-fill.clr-green { background: #22c55e; }
+.bar-fill.clr-yellow { background: #f59e0b; }
+.bar-fill.clr-red { background: #ef4444; }
+.result-insight { font-size: 12px; font-weight: 500; line-height: 1.4; }
+.result-insight.clr-green { color: #16a34a; }
+.result-insight.clr-yellow { color: #d97706; }
+.result-insight.clr-red { color: #dc2626; }
+.allowance-card {
+    background: #0f0f12; border-radius: 14px; padding: 16px 20px;
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+}
+.allowance-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+.allowance-value { font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -0.6px; }
+.allowance-sub { font-size: 11px; color: #555; margin-top: 3px; }
+.allowance-right { text-align: right; }
+.allowance-days { font-size: 13px; font-weight: 700; color: #4f46e5; }
+.allowance-days-label { font-size: 11px; color: #555; margin-top: 2px; }
+.cat-budget-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f5f5f7; }
+.cat-budget-row:last-child { border-bottom: none; }
+.cat-name { font-size: 13px; font-weight: 600; color: #1a1a1a; width: 90px; flex-shrink: 0; }
+.cat-bar-wrap { flex: 1; }
+.cat-bar-bg { width: 100%; height: 4px; background: #f0f0f2; border-radius: 99px; overflow: hidden; margin-bottom: 4px; }
+.cat-bar-fill { height: 4px; border-radius: 99px; }
+.cat-bar-fill.clr-green { background: #22c55e; }
+.cat-bar-fill.clr-yellow { background: #f59e0b; }
+.cat-bar-fill.clr-red { background: #ef4444; }
+.cat-bar-fill.clr-none { background: #e5e5ea; width: 0%; }
+.cat-spent-label { font-size: 10px; color: #bbb; }
+.cat-limit-input {
+    border: 1.5px solid #e5e5ea; border-radius: 8px; padding: 6px 10px; font-size: 12px;
+    font-family: 'Outfit', sans-serif; color: #0f0f12; background: #fafafa;
+    outline: none; width: 90px; transition: border-color 0.15s; flex-shrink: 0;
+}
+.cat-limit-input:focus { border-color: #4f46e5; background: #fff; }
+.cat-limit-input::placeholder { color: #ccc; }
+</style>
+
+{% set m_budget = monthly_budget | float %}
+{% set y_budget = yearly_budget | float %}
+{% if m_budget > 0 %}
+    {% set m_pct = [(monthly_total / m_budget * 100) | round | int, 100] | min %}
+{% else %}
+    {% set m_pct = 0 %}
+{% endif %}
+{% if y_budget > 0 %}
+    {% set y_pct = [(yearly_total / y_budget * 100) | round | int, 100] | min %}
+{% else %}
+    {% set y_pct = 0 %}
+{% endif %}
+
+{% macro bcolor(pct) %}{% if pct >= 100 %}clr-red{% elif pct >= 80 %}clr-yellow{% else %}clr-green{% endif %}{% endmacro %}
+
+<div class="page-header">
+    <h2>Budget</h2>
+    <p>{{ now_month }} &nbsp;·&nbsp; {{ days_left }} days left this month</p>
+</div>
+
+<div class="section-label first">Set limits</div>
+<div class="input-card">
+    <form method="POST" action="{{ url_for('set_budget') }}">
+        <div class="input-row">
+            <div class="input-group">
+                <label class="input-label">Monthly limit</label>
+                <input type="number" name="monthly_budget" step="0.01" min="0"
+                       placeholder="e.g. 500" value="{{ m_budget if m_budget > 0 else '' }}" class="field-input">
+            </div>
+            <div class="input-group">
+                <label class="input-label">Yearly limit</label>
+                <input type="number" name="yearly_budget" step="0.01" min="0"
+                       placeholder="e.g. 6000" value="{{ y_budget if y_budget > 0 else '' }}" class="field-input">
+            </div>
+            <button type="submit" class="btn-save">Save</button>
+        </div>
+    </form>
+</div>
+
+{% if m_budget > 0 or y_budget > 0 %}
+<div class="section-label">How you're doing</div>
+
+{% if m_budget > 0 and days_left > 0 %}
+{% set remaining = m_budget - monthly_total %}
+{% set daily_allowance = remaining / days_left if remaining > 0 else 0 %}
+<div class="allowance-card">
+    <div>
+        <div class="allowance-label">Daily allowance left</div>
+        <div class="allowance-value" data-amount="{{ daily_allowance | round(2) }}">{{ daily_allowance | round(2) }}</div>
+        <div class="allowance-sub">to stay within monthly limit</div>
+    </div>
+    <div class="allowance-right">
+        <div class="allowance-days">{{ days_left }}</div>
+        <div class="allowance-days-label">days left</div>
+    </div>
+</div>
+{% endif %}
+
+<div class="result-grid">
+    {% if m_budget > 0 %}
+    <div class="result-card">
+        <div class="result-card-head">
+            <span>Monthly</span>
+            <span class="result-pct">{{ m_pct }}%</span>
+        </div>
+        <div class="result-amounts">
+            <span class="result-spent {{ bcolor(m_pct) }}" data-amount="{{ monthly_total | round(2) }}">{{ monthly_total | round(2) }}</span>
+            <span class="result-of">of <span data-amount="{{ m_budget | round(2) }}">{{ m_budget | round(2) }}</span></span>
+        </div>
+        <div class="bar-bg">
+            <div class="bar-fill {{ bcolor(m_pct) }}" style="width:{{ m_pct }}%"></div>
+        </div>
+        <div class="result-insight {{ bcolor(m_pct) }}">
+            {% if m_pct >= 100 %}Over by <span data-amount="{{ (monthly_total - m_budget) | round(2) }}">{{ (monthly_total - m_budget) | round(2) }}</span>
+            {% elif m_pct >= 80 %}<span data-amount="{{ (m_budget - monthly_total) | round(2) }}">{{ (m_budget - monthly_total) | round(2) }}</span> left — getting close
+            {% else %}<span data-amount="{{ (m_budget - monthly_total) | round(2) }}">{{ (m_budget - monthly_total) | round(2) }}</span> remaining
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if y_budget > 0 %}
+    <div class="result-card">
+        <div class="result-card-head">
+            <span>Yearly</span>
+            <span class="result-pct">{{ y_pct }}%</span>
+        </div>
+        <div class="result-amounts">
+            <span class="result-spent {{ bcolor(y_pct) }}" data-amount="{{ yearly_total | round(2) }}">{{ yearly_total | round(2) }}</span>
+            <span class="result-of">of <span data-amount="{{ y_budget | round(2) }}">{{ y_budget | round(2) }}</span></span>
+        </div>
+        <div class="bar-bg">
+            <div class="bar-fill {{ bcolor(y_pct) }}" style="width:{{ y_pct }}%"></div>
+        </div>
+        <div class="result-insight {{ bcolor(y_pct) }}">
+            {% if y_pct >= 100 %}Over by <span data-amount="{{ (yearly_total - y_budget) | round(2) }}">{{ (yearly_total - y_budget) | round(2) }}</span>
+            {% elif y_pct >= 80 %}<span data-amount="{{ (y_budget - yearly_total) | round(2) }}">{{ (y_budget - yearly_total) | round(2) }}</span> left — getting close
+            {% else %}<span data-amount="{{ (y_budget - yearly_total) | round(2) }}">{{ (y_budget - yearly_total) | round(2) }}</span> remaining
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<div style="background:#fff;border:1px solid #ebebef;border-radius:14px;padding:2rem;text-align:center;margin-bottom:10px;">
+    <div style="font-size:13px;color:#ccc;">Set a limit above to see how you're tracking</div>
+</div>
+{% endif %}
+
+<div class="section-label">Category limits</div>
+<div class="input-card">
+    <form method="POST" action="{{ url_for('set_category_budgets') }}">
+        {% set categories_list = ['Food', 'Transport', 'Shopping', 'Health', 'Entertainment', 'Bills', 'Education', 'Other'] %}
+        {% for cat in categories_list %}
+            {% set spent = category_totals.get(cat, 0) %}
+            {% set limit = category_budgets.get(cat, 0) | float %}
+            {% if limit > 0 %}
+                {% set cat_pct = [(spent / limit * 100) | round | int, 100] | min %}
+            {% else %}
+                {% set cat_pct = 0 %}
+            {% endif %}
+            <div class="cat-budget-row">
+                <div class="cat-name">{{ cat }}</div>
+                <div class="cat-bar-wrap">
+                    {% if limit > 0 %}
+                    <div class="cat-bar-bg">
+                        <div class="cat-bar-fill {{ bcolor(cat_pct) }}" style="width:{{ cat_pct }}%"></div>
+                    </div>
+                    <div class="cat-spent-label">
+                        <span data-amount="{{ spent | round(2) }}">{{ spent | round(2) }}</span>
+                        of <span data-amount="{{ limit | round(2) }}">{{ limit | round(2) }}</span>
+                    </div>
+                    {% else %}
+                    <div class="cat-bar-bg"><div class="cat-bar-fill clr-none"></div></div>
+                    <div class="cat-spent-label"><span data-amount="{{ spent | round(2) }}">{{ spent | round(2) }}</span> spent &nbsp;·&nbsp; no limit set</div>
+                    {% endif %}
+                </div>
+                <input type="number" name="cat_{{ cat }}" step="0.01" min="0"
+                       placeholder="limit" value="{{ limit if limit > 0 else '' }}" class="cat-limit-input">
+            </div>
+        {% endfor %}
+        <div style="margin-top:14px;text-align:right;">
+            <button type="submit" class="btn-save">Save category limits</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
