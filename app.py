@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify
 from dotenv import load_dotenv
 from auth import init_oauth, login_required
+from werkzeug.middleware.proxy_fix import ProxyFix
 from db import get_or_create_user, save_expense, get_expenses, delete_expense, update_budget
 from datetime import datetime
 import logging
@@ -9,6 +10,7 @@ import os
 load_dotenv()
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.secret_key = os.getenv('SECRET_KEY')
 app.config['GOOGLE_CLIENT_ID'] = os.getenv('GOOGLE_CLIENT_ID')
 app.config['GOOGLE_CLIENT_SECRET'] = os.getenv('GOOGLE_CLIENT_SECRET')
